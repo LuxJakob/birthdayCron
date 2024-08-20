@@ -2,7 +2,6 @@ import io
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from cryptography.hazmat.backends import default_backend
@@ -10,8 +9,10 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+from src.send_email import send_email
 
-def decode_and_check(password: str) -> int | List:
+
+def decode_and_check(password: str) -> None:
     current_script_path = Path(__file__)
     parent_directory = current_script_path.parent.parent
     file_path = parent_directory / "encrypted_file.enc"
@@ -36,11 +37,13 @@ def decode_and_check(password: str) -> int | List:
     try:
         decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
         data_stream = io.BytesIO(decrypted_data)
-        df = pd.read_csv(data_stream)
+        df = pd.read_csv(data_stream, encoding='ISO-8859-1', delimiter=',')
     except pd.errors.ParserError as e:
         print(f"Error parsing CSV data: {e}")
+        raise
     except Exception as e:
         print(f"An error occurred: {e}")
+        raise
 
     df['Birthday'] = pd.to_datetime(df['Birthday'], errors='coerce')
 
@@ -52,9 +55,9 @@ def decode_and_check(password: str) -> int | List:
 
     if not birthdays_today.empty:
         print("There seems to be something!")
-        return final_list
-
-    return 0
+        send_email(final_list)
+    else:
+        print("Guess today is chill!")
 
 
 if __name__ == "__main__":

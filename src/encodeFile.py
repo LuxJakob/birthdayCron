@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-def encode_your_csv(password) -> None:
+def encode_your_csv(password: str) -> None:
     file_path = parent_directory / 'contacts.csv'
 
     df = pandas.read_csv(file_path)

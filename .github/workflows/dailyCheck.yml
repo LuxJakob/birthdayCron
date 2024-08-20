@@ -2,10 +2,8 @@ name: Process Encrypted CSV
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  repository_dispatch:
+    - cron: '0 5 * * *'
   workflow_dispatch:
-  push:
 
 jobs:
   decrypt_and_process_csv:
@@ -29,10 +27,8 @@ jobs:
       id: decrypt_csv
       env:
         CSV_DECRYPT_PASSWORD: ${{ secrets.DECODE }}
+        MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+        MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       run: |
-          python3 src/main.py "CSV_DECRYPT_PASSWORD"
-
-    - name: Check Output and Trigger Reminder
-      if: steps.decrypt_csv.outputs.result != '0'
-      run: |
-        echo "Non-zero output detected. Triggering sendReminder workflow."
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python3 src/main.py "$CSV_DECRYPT_PASSWORD"
