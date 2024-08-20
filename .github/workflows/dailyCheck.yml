@@ -1,0 +1,38 @@
+name: Process Encrypted CSV
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  repository_dispatch:
+  workflow_dispatch:
+  push:
+
+jobs:
+  decrypt_and_process_csv:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Decrypt CSV file
+      id: decrypt_csv
+      env:
+        CSV_DECRYPT_PASSWORD: ${{ secrets.DECODE }}
+      run: |
+          python3 src/main.py "CSV_DECRYPT_PASSWORD"
+
+    - name: Check Output and Trigger Reminder
+      if: steps.decrypt_csv.outputs.result != '0'
+      run: |
+        echo "Non-zero output detected. Triggering sendReminder workflow."
