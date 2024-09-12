@@ -17,27 +17,11 @@ def decode_and_check(password: str) -> None:
     parent_directory = current_script_path.parent.parent
     file_path = parent_directory / "encrypted_file.enc"
 
-    with open(file_path, 'rb') as f:
-        salt = f.read(16)
-        iv = f.read(16)
-        encrypted_data = f.read()
-
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-        backend=default_backend()
-    )
-    key = kdf.derive(password.encode())
-
-    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
+    salt, iv, encrypted_data = load_encrypted_file(file_path)
 
     try:
-        decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
-        data_stream = io.BytesIO(decrypted_data)
-        df = pd.read_csv(data_stream, encoding='ISO-8859-1', delimiter=',')
+        decrypted_data = decrypt_data(password, salt, iv, encrypted_data)
+        df = parse_csv_data(decrypted_data)
     except pd.errors.ParserError as e:
         print(f"Error parsing CSV data: {e}")
         raise
@@ -45,11 +29,7 @@ def decode_and_check(password: str) -> None:
         print(f"An error occurred: {e}")
         raise
 
-    df['Birthday'] = pd.to_datetime(df['Birthday'], errors='coerce')
-
-    today = datetime.today()
-
-    birthdays_today = df[(df['Birthday'].dt.month == today.month) & (df['Birthday'].dt.day == today.day)]
+    birthdays_today = filter_birthdays(df)
 
     final_list = birthdays_today.to_dict('records')
 
@@ -58,6 +38,47 @@ def decode_and_check(password: str) -> None:
         send_email(final_list)
     else:
         print("Guess today is chill!")
+
+
+def load_encrypted_file(file_path: Path) -> tuple:
+    with open(file_path, 'rb') as f:
+        salt = f.read(16)
+        iv = f.read(16)
+        encrypted_data = f.read()
+    return salt, iv, encrypted_data
+
+
+def decrypt_data(password: str, salt: bytes, iv: bytes, encrypted_data: bytes) -> bytes:
+    # pylint: disable=R0801
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+        backend=default_backend()
+    )
+    key = kdf.derive(password.encode())
+    # pylint: enable=R0801
+
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    return decryptor.update(encrypted_data) + decryptor.finalize()
+
+
+def parse_csv_data(decrypted_data: bytes) -> pd.DataFrame:
+    data_stream = io.BytesIO(decrypted_data)
+    df = pd.read_csv(data_stream, encoding='ISO-8859-1', delimiter=',')
+    return df
+
+
+def filter_birthdays(df: pd.DataFrame) -> pd.DataFrame:
+    df['Birthday'] = pd.to_datetime(df['Birthday'], errors='coerce')
+    today = datetime.today()
+    birthdays_today = df[
+        (df['Birthday'].dt.month == today.month) &
+        (df['Birthday'].dt.day == today.day)
+    ]
+    return birthdays_today
 
 
 if __name__ == "__main__":

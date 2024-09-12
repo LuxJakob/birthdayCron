@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 def encode_your_csv(password: str) -> None:
-    file_path = parent_directory / 'contacts.csv'
+    file_path = parent_directory / 'contacts.csv'  # pylint: disable=E0606
 
     df = pandas.read_csv(file_path)
 
@@ -26,6 +26,7 @@ def encode_your_csv(password: str) -> None:
 
 def encrypt_file(data: str, password: str) -> None:
     salt = os.urandom(16)
+    # pylint: disable=R0801
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -34,6 +35,7 @@ def encrypt_file(data: str, password: str) -> None:
         backend=default_backend()
     )
     key = kdf.derive(password.encode())
+    # pylint: enable=R0801
 
     iv = os.urandom(16)
     cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())

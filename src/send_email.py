@@ -19,35 +19,8 @@ def send_email(list_of_people: List) -> None:
         print("Error: MAIL_USERNAME or MAIL_PASSWORD is not set.")
         return
 
-    today = datetime.today()
-
-    subject = ""
-    message_body = ""
-
-    for entry in list_of_people:
-        first_name = entry['First Name']
-        last_name = entry['Last Name']
-        birthday = entry['Birthday']
-
-        age = today.year - birthday.year
-
-        subject += f'{first_name} {last_name} '
-        message_body += f'{first_name} wird heute {age} Jahre alt! 🐸<br><br>'
-
-    subject += "hat heute Geburtstag! 🥳🤩"
-
-    message_body += 'Da wünsche ich alles Gute zum Geburtstag!<br><br>'
-
-    message_body += fetch_random_gif()
-    message_body += fetch_random_quote()
-
-    message_body += '''
-    <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: left; font-size: 18px; 
-    color: #333; padding: 20px; border-radius: 8px;">
-        <p>Diese Mail erreicht dich via meines GitHub Cronjobs.</p>
-        <p>Liebe Drücker,</p>
-        <p>Jakob</p>
-    </div>'''
+    subject = create_subject(list_of_people)
+    message_body = create_message_body(list_of_people)
 
     email_message = MIMEMultipart()
     email_message['From'] = username
@@ -64,8 +37,42 @@ def send_email(list_of_people: List) -> None:
         print("Email sent successfully.")
     except smtplib.SMTPAuthenticationError as e:
         print(f"Authentication error: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    except smtplib.SMTPException as e:
+        print(f"SMTP error: {e}")
+    except Exception as e:  # pylint: disable=W0718
+        print(f"An unexpected error occurred: {e}") # Fallback
+
+
+def create_subject(list_of_people: List) -> str:
+    subject = ""
+    for entry in list_of_people:
+        first_name = entry['First Name']
+        last_name = entry['Last Name']
+        subject += f'{first_name} {last_name} '
+    subject += "hat heute Geburtstag! 🥳🤩"
+    return subject
+
+
+def create_message_body(list_of_people: List) -> str:
+    message_body = ""
+    today = datetime.today()
+    for entry in list_of_people:
+        first_name = entry['First Name']
+        birthday = entry['Birthday']
+        age = today.year - birthday.year
+        message_body += f'{first_name} wird heute {age} Jahre alt! 🐸<br><br>'
+
+    message_body += 'Da wünsche ich alles Gute zum Geburtstag!<br><br>'
+    message_body += fetch_random_gif()
+    message_body += fetch_random_quote()
+    message_body += '''
+    <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: left; font-size: 18px; 
+    color: #333; padding: 20px; border-radius: 8px;">
+        <p>Diese Mail erreicht dich via meines GitHub Cronjobs.</p>
+        <p>Liebe Drücker,</p>
+        <p>Jakob</p>
+    </div>'''
+    return message_body
 
 
 def fetch_random_gif() -> str:
@@ -79,12 +86,13 @@ def fetch_random_gif() -> str:
     random = True
     lmt = 1
     response = requests.get(
-        "https://tenor.googleapis.com/v2/"
-        "search?q=%s&key=%s&client_key=%s&country=%s&locale=%s&contentfilter=%s&media_filter=%s&random=%s&limit=%s"
-        % (search_term, api_token_tenor, client_key, country, locale, contentfilter, media_filter, str(random).lower(),
-           lmt)
+        f"https://tenor.googleapis.com/v2/search?q={search_term}&key={api_token_tenor}&"
+        f"client_key={client_key}&country={country}&locale={locale}&"
+        f"contentfilter={contentfilter}&media_filter={media_filter}&"
+        f"random={str(random).lower()}&limit={lmt}"
     )
 
+    funny_gif = ''
     if response.status_code == 200:
         data = response.json()
         gif_url = data['results'][0]['media_formats']['gif']['url']
@@ -97,15 +105,13 @@ def fetch_random_gif() -> str:
                  height="20" width="95" alt="Tenor Logo"/>
                 <a href="https://tenor.com/" title="Powered by Tenor"
                  style="color: #ccc; margin-left: 8px; text-decoration: none;"></a>
-            </div><br><br>'''
+            </div><br>'''
         funny_gif += footer
-
-        return funny_gif
     else:
         print(
             f'GIF was not found! {response.status_code} & {response.text}'
         )
-        return '<br><strong>Oops! No GIF was found :(</strong><br><br>'
+    return funny_gif
 
 
 def fetch_random_quote() -> str:
@@ -119,8 +125,17 @@ def fetch_random_quote() -> str:
 
     response = requests.get(url, headers=headers)
 
-    quote = "Meine Zitate-API findet, das passt heute für dich!<br><br>"
-    quote += '''
+    if response.status_code == 200:
+        data = response.json()
+        quote_info = data['contents']['quotes'][0]
+        author = quote_info['author']
+        quote = quote_info['quote']
+        formatted_quote = f'{author}:<br>"{quote}<br><br>"'
+    else:
+        print(
+            f'Quote was not found! {response.status_code} & {response.text}'
+        )
+        formatted_quote = '''
         <p><strong>Bertolt Brecht:</strong></p>
         <blockquote style="margin-left: 20px;">
             <p>Und der Haifisch, der hat Zähne<br>
@@ -128,20 +143,7 @@ def fetch_random_quote() -> str:
             Und Macheath, der hat ein Messer<br>
             Doch das Messer sieht man nicht.</p>
         </blockquote>
-    '''
-
-    if response.status_code == 200:
-        data = response.json()
-
-        quote_info = data['contents']['quotes'][0]
-        author = quote_info['author']
-        quote = quote_info['quote']
-
-        quote = f'<br><br>{author}:<br>"{quote}<br><br>"'
-    else:
-        print(
-            f'Quote was not found! {response.status_code} & {response.text}'
-        )
+        '''
 
     footer = '''
         <span style="z-index:50;font-size:0.9em; font-weight: bold;">
@@ -149,6 +151,6 @@ def fetch_random_quote() -> str:
             <a href="https://theysaidso.com" title="Powered by quotes from theysaidso.com" 
                style="color: #ccc; margin-left: 4px; vertical-align: middle;">They Said So®</a>
         </span><br><br>'''
-    quote += footer
+    formatted_quote += footer
 
-    return quote
+    return formatted_quote
