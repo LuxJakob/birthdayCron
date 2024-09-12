@@ -28,6 +28,7 @@ jobs:
       env:
         CSV_DECRYPT_PASSWORD: ${{ secrets.DECODE }}
         API_TOKEN_QOD: ${{ secrets.API_TOKEN_QOD }}
+        API_TOKEN_TENOR: ${{ secrets.API_TOKEN_TENOR }}
         MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
         MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       run: |
