@@ -156,7 +156,7 @@ cython_debug/
 
 # Private files not for VCS
 contacts.csv
-quick_lookup.csv
+encoding.txt
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

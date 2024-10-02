@@ -1,5 +1,6 @@
 import getpass
 import os
+import re
 from io import StringIO
 from pathlib import Path
 
@@ -13,16 +14,23 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 def encode_your_csv(password: str) -> None:
     file_path = parent_directory / 'contacts.csv'  # pylint: disable=E0606
 
-    df = pandas.read_csv(file_path)
+    df = pandas.read_csv(file_path, dtype={'Birthday': 'str'})
 
     df_filtered = df[['First Name', 'Last Name', 'Birthday']]
     df_filtered = df_filtered.dropna(subset=['Birthday'])
+    df_filtered['Birthday'] = df_filtered['Birthday'].apply(fill_year_with_1900)
 
     csv_buffer_var = StringIO()
     df_filtered.to_csv(csv_buffer_var, index=False)
     csv_content_bytes = csv_buffer_var.getvalue()
 
     encrypt_file(csv_content_bytes, password)
+
+def fill_year_with_1900(birthday):
+    birthday = birthday.strip()
+    if re.match(r'^--\d{2}-\d{2}$', birthday):
+        birthday = '1900' + birthday[1:]
+    return birthday
 
 def encrypt_file(data: str, password: str) -> None:
     salt = os.urandom(16)
