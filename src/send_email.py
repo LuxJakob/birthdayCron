@@ -120,7 +120,7 @@ def fetch_random_quote() -> str:
 
     headers = {
         'accept': 'application/json',
-        'Authorization': f'Bearer {api_token_qod}'
+        'X-TheySaidSo-Api-Secret': f'{api_token_qod}'
     }
 
     response = requests.get(url, headers=headers)
@@ -130,7 +130,10 @@ def fetch_random_quote() -> str:
         quote_info = data['contents']['quotes'][0]
         author = quote_info['author']
         quote = quote_info['quote']
-        formatted_quote = f'{author}:<br>"{quote}<br><br>"'
+        formatted_quote = (
+            f'Außerdem habe ich dieses Zitat für dich:'
+             f'<br>{author}:<br>"{quote}<br><br>"'
+        )
     else:
         print(
             f'Quote was not found! {response.status_code} & {response.text}'
