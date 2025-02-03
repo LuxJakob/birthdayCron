@@ -57,10 +57,9 @@ def create_message_body(list_of_people: List) -> str:
     message_body = ""
     today = datetime.today()
     for entry in list_of_people:
-        first_name = entry['First Name']
         birthday = entry['Birthday']
         age = today.year - birthday.year
-        message_body += f'{first_name} wird heute {age} Jahre alt! 🐸<br><br>'
+        message_body += f'Glückwunsch! Du wirst heute {age} Jahre alt! 🐸<br>'
 
     message_body += 'Da wünsche ich alles Gute zum Geburtstag!<br><br>'
     message_body += fetch_random_gif()
@@ -130,23 +129,21 @@ def fetch_random_quote() -> str:
         quote_info = data['contents']['quotes'][0]
         author = quote_info['author']
         quote = quote_info['quote']
-        formatted_quote = (
-            f'Außerdem habe ich dieses Zitat für dich:'
-             f'<br>{author}:<br>"{quote}<br><br>"'
-        )
     else:
         print(
             f'Quote was not found! {response.status_code} & {response.text}'
         )
-        formatted_quote = '''
-        <p><strong>Bertolt Brecht:</strong></p>
-        <blockquote style="margin-left: 20px;">
-            <p>Und der Haifisch, der hat Zähne<br>
-            Und die trägt er im Gesicht<br>
-            Und Macheath, der hat ein Messer<br>
-            Doch das Messer sieht man nicht.</p>
-        </blockquote>
-        '''
+        author = "Berthold Brecht"
+        quote = '''Und der Haifisch, der hat Zähne<br>
+        Und die trägt er im Gesicht<br>
+        Und Macheath, der hat ein Messer<br>
+        Doch das Messer sieht man nicht.'''
+
+    formatted_quote = (
+        f'Außerdem habe ich dieses Zitat für dich:'
+        f'<p><strong>{author}:</strong></p>'
+        f'<blockquote style=margin-left: 20px;><p>{quote}</p></blockquote>'
+    )
 
     footer = '''
         <span style="z-index:50;font-size:0.9em; font-weight: bold;">

@@ -13,7 +13,7 @@ This project automatically decrypts a CSV file containing birthday information, 
 
 1. Encrypt your contacts.csv
    ```bash
-   python3 src/encodeFile.py
+   python3 src/encode_file.py
    ```
    ***IMPORTANT:*** Use the same Password as your GitHub Actions Secret!
 2. Trigger Script via GitHub Action
