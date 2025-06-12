@@ -64,6 +64,7 @@ def create_message_body(list_of_people: List) -> str:
     message_body += 'Da wünsche ich alles Gute zum Geburtstag!<br><br>'
     message_body += fetch_random_gif()
     message_body += fetch_random_quote()
+    message_body += fetch_random_advice()
     message_body += '''
     <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: left; font-size: 18px; 
     color: #333; padding: 20px; border-radius: 8px;">
@@ -139,3 +140,21 @@ def fetch_random_quote() -> str:
     )
 
     return formatted_quote
+
+
+def fetch_random_advice() -> str:
+    url = 'https://api.adviceslip.com/advice'
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        advice = data['slip']['advice']
+
+        formatted_advice = (
+            f'<p>Wichtiges Wissen für dein neues Lebensjahr:</p>'
+            f'<p>{advice}:</p><br><br>'
+        )
+        return formatted_advice
+
+    return ''
