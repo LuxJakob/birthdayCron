@@ -114,21 +114,14 @@ def fetch_random_gif() -> str:
 
 
 def fetch_random_quote() -> str:
-    api_token_qod = os.environ.get('API_TOKEN_QOD')
-    url = 'https://quotes.rest/qod?category=inspire&language=en'
+    url = 'https://favqs.com/api/qotd'
 
-    headers = {
-        'accept': 'application/json',
-        'X-TheySaidSo-Api-Secret': f'{api_token_qod}'
-    }
-
-    response = requests.get(url, headers=headers)
+    response = requests.get(url)
 
     if response.status_code == 200:
         data = response.json()
-        quote_info = data['contents']['quotes'][0]
-        author = quote_info['author']
-        quote = quote_info['quote']
+        author = data['quote']['author']
+        quote = data['quote']['body']
     else:
         print(
             f'Quote was not found! {response.status_code} & {response.text}'
@@ -144,13 +137,5 @@ def fetch_random_quote() -> str:
         f'<p><strong>{author}:</strong></p>'
         f'<blockquote style=margin-left: 20px;><p>{quote}</p></blockquote>'
     )
-
-    footer = '''
-        <span style="z-index:50;font-size:0.9em; font-weight: bold;">
-            <img src="https://theysaidso.com/branding/theysaidso.png" height="20" width="20" alt="theysaidso.com"/>
-            <a href="https://theysaidso.com" title="Powered by quotes from theysaidso.com" 
-               style="color: #ccc; margin-left: 4px; vertical-align: middle;">They Said So®</a>
-        </span><br><br>'''
-    formatted_quote += footer
 
     return formatted_quote
