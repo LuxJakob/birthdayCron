@@ -1,6 +1,6 @@
 import io
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -29,7 +29,8 @@ def decode_and_check(password: str) -> None:
         print(f"An error occurred: {e}")
         raise
 
-    birthdays_today = filter_birthdays(df)
+    target_date = datetime.today()
+    birthdays_today = filter_birthdays(df, target_date)
 
     final_list = birthdays_today.to_dict('records')
 
@@ -38,6 +39,17 @@ def decode_and_check(password: str) -> None:
         send_email(final_list)
     else:
         print("Guess today is chill!")
+
+    target_date += timedelta(days=14)
+    birthdays_two_weeks = filter_birthdays(df, target_date)
+
+    future_list = birthdays_two_weeks.to_dict('records')
+
+    if not birthdays_today.empty:
+        print("Be prepared!")
+        send_email(future_list)
+    else:
+        print("Guess there nothing incoming!")
 
 
 def load_encrypted_file(file_path: Path) -> tuple:
@@ -71,12 +83,11 @@ def parse_csv_data(decrypted_data: bytes) -> pd.DataFrame:
     return df
 
 
-def filter_birthdays(df: pd.DataFrame) -> pd.DataFrame:
+def filter_birthdays(df: pd.DataFrame, target_date: datetime) -> pd.DataFrame:
     df['Birthday'] = pd.to_datetime(df['Birthday'], errors='coerce')
-    today = datetime.today()
     birthdays_today = df[
-        (df['Birthday'].dt.month == today.month) &
-        (df['Birthday'].dt.day == today.day)
+        (df['Birthday'].dt.month == target_date.month) &
+        (df['Birthday'].dt.day == target_date.day)
     ]
     return birthdays_today
 

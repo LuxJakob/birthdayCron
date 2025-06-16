@@ -9,7 +9,21 @@ from typing import List
 import requests
 
 
-def send_email(list_of_people: List) -> None:
+def send_email(list_of_people: List, prepare=False) -> None:
+    email_message = MIMEMultipart()
+
+    if not prepare:
+        for dude in list_of_people:
+            subject = create_subject(dude)
+            message_body = create_message_body(dude)
+            send_mail(email_message, subject, message_body)
+    else:
+        subject = 'Be prepared - ETA-14!'
+        message_body = create_reminder_body(list_of_people)
+        send_mail(email_message, subject, message_body)
+
+
+def send_mail(email_message: MIMEMultipart, subject: str, message_body: str) -> None:
     port = 465
     smtp_server = "smtp.gmail.com"
     username = os.environ.get('MAIL_USERNAME')
@@ -19,14 +33,9 @@ def send_email(list_of_people: List) -> None:
         print("Error: MAIL_USERNAME or MAIL_PASSWORD is not set.")
         return
 
-    subject = create_subject(list_of_people)
-    message_body = create_message_body(list_of_people)
-
-    email_message = MIMEMultipart()
     email_message['From'] = username
     email_message['To'] = username
     email_message['Subject'] = subject
-
     email_message.attach(MIMEText(message_body, 'html'))
 
     try:
@@ -40,26 +49,24 @@ def send_email(list_of_people: List) -> None:
     except smtplib.SMTPException as e:
         print(f"SMTP error: {e}")
     except Exception as e:  # pylint: disable=W0718
-        print(f"An unexpected error occurred: {e}") # Fallback
+        print(f"An unexpected error occurred: {e}")  # Fallback
 
 
-def create_subject(list_of_people: List) -> str:
+def create_subject(dude: dict) -> str:
     subject = ""
-    for entry in list_of_people:
-        first_name = entry['First Name']
-        last_name = entry['Last Name']
-        subject += f'{first_name} {last_name} '
+    first_name = dude['First Name']
+    last_name = dude['Last Name']
+    subject += f'{first_name} {last_name} '
     subject += "hat heute Geburtstag! 🥳🤩"
     return subject
 
 
-def create_message_body(list_of_people: List) -> str:
+def create_message_body(dude: dict) -> str:
     message_body = ""
     today = datetime.today()
-    for entry in list_of_people:
-        birthday = entry['Birthday']
-        age = today.year - birthday.year
-        message_body += f'Glückwunsch! Du wirst heute {age} Jahre alt! 🐸<br>'
+    birthday = dude['Birthday']
+    age = today.year - birthday.year
+    message_body += f'Glückwunsch! Du wirst heute {age} Jahre alt! 🐸<br>'
 
     message_body += 'Da wünsche ich alles Gute zum Geburtstag!<br><br>'
     message_body += fetch_random_gif()
@@ -73,6 +80,16 @@ def create_message_body(list_of_people: List) -> str:
         <p>Jakob</p>
     </div>'''
     return message_body
+
+
+def create_reminder_body(list_of_people: List) -> str:
+    message = """<p>In ZWEI WOCHEN hat Geburtstag:</p>"""
+    for dude in list_of_people:
+        first_name = dude['First Name']
+        last_name = dude['Last Name']
+        message += f"""{first_name} {last_name} <br>"""
+
+    return message
 
 
 def fetch_random_gif() -> str:
